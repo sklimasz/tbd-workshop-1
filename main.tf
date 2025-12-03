@@ -1,19 +1,19 @@
 locals {
-  main_subnet_address     = "10.10.10.0/24"
-  notebook_vpc_name       = "main-vpc"
-  notebook_subnet_name    = "subnet-01"
-  notebook_subnet_id      = "${var.region}/${local.notebook_subnet_name}"
-  composer_subnet_address = "10.11.0.0/16"
-  composer_work_namespace = "composer-user-workloads"
-  code_bucket_name        = "${var.project_name}-code"
-  data_bucket_name        = "${var.project_name}-data"
-  spark_version           = "3.5.1"
-  spark_driver_port       = 30000
-  spark_blockmgr_port     = 30001
-  dbt_version             = "1.8.7"
-  dbt_spark_version       = "1.8.0"
-  dbt_git_repo            = "https://github.com/mwiewior/tbd-tpc-di.git"
-  dbt_git_repo_branch     = "main"
+  main_subnet_address  = "10.10.10.0/24"
+  notebook_vpc_name    = "main-vpc"
+  notebook_subnet_name = "subnet-01"
+  notebook_subnet_id   = "${var.region}/${local.notebook_subnet_name}"
+  # composer_subnet_address = "10.11.0.0/16"
+  # composer_work_namespace = "composer-user-workloads"
+  code_bucket_name = "${var.project_name}-code"
+  data_bucket_name = "${var.project_name}-data"
+  spark_version    = "3.5.1"
+  # spark_driver_port       = 30000
+  # spark_blockmgr_port = 30001
+  dbt_version       = "1.8.7"
+  dbt_spark_version = "1.8.0"
+  # dbt_git_repo            = "https://github.com/mwiewior/tbd-tpc-di.git"
+  # dbt_git_repo_branch     = "main"
 }
 
 module "vpc" {
@@ -33,14 +33,14 @@ module "gcr" {
 
 ## Jupyter Docker image no longer needed - using Jupyter on Dataproc cluster instead
 #module "jupyter_docker_image" {
-#  depends_on         = [module.gcr]
-#  source             = "./modules/jupyter_docker_image"
-#  registry_hostname  = module.gcr.registry_hostname
-#  registry_repo_name = coalesce(var.project_name)
-#  project_name       = var.project_name
-#  spark_version      = local.spark_version
-#  dbt_version        = local.dbt_version
-#  dbt_spark_version  = local.dbt_spark_version
+#  depends_on          = [module.gcr]
+#  source              = "./modules/jupyter_docker_image"
+#  registry_hostname   = module.gcr.registry_hostname
+#  registry_repo_name  = coalesce(var.project_name)
+#  project_name        = var.project_name
+#  spark_version       = local.spark_version
+#  dbt_version         = local.dbt_version
+#  dbt_spark_version   = local.dbt_spark_version
 #}
 
 ## Vertex AI Workbench replaced with Jupyter on Dataproc cluster
@@ -80,6 +80,8 @@ module "dataproc" {
 #  network        = module.vpc.network.network_id
 #}
 
+/*
+# MODUŁ CLOUD COMPOSER ZAKOMENTOWANY Z POWODU PROBLEMÓW Z QUOTA NA DYSKI SSD.
 module "composer" {
   depends_on     = [module.vpc]
   source         = "./modules/composer"
@@ -96,9 +98,11 @@ module "composer" {
     "AIRFLOW_VAR_DBT_GIT_REPO_BRANCH" : local.dbt_git_repo_branch
   }
 }
+*/
 
 module "dbt_docker_image" {
-  depends_on         = [module.composer, module.gcr]
+  # Usunięto zależność od module.composer
+  depends_on         = [module.gcr]
   source             = "./modules/dbt_docker_image"
   registry_hostname  = module.gcr.registry_hostname
   registry_repo_name = coalesce(var.project_name)
@@ -109,18 +113,19 @@ module "dbt_docker_image" {
 }
 
 module "data-pipelines" {
-  source               = "./modules/data-pipeline"
-  project_name         = var.project_name
-  region               = var.region
-  bucket_name          = local.code_bucket_name
-  data_service_account = module.composer.data_service_account
-  dag_bucket_name      = module.composer.gcs_bucket
-  data_bucket_name     = local.data_bucket_name
+  source       = "./modules/data-pipeline"
+  project_name = var.project_name
+  region       = var.region
+  bucket_name  = local.code_bucket_name
+  # Zakomentowano zmienne wejściowe zależne od module.composer
+  # data_service_account = module.composer.data_service_account
+  # dag_bucket_name      = module.composer.gcs_bucket
+  data_bucket_name = local.data_bucket_name
 }
 
 
-
-
+/*
+# ZASÓB KUBERNETES SERVICE ZAKOMENTOWANY - Wymaga klastra GKE utworzonego przez Composera.
 resource "kubernetes_service" "dbt-task-service" {
   metadata {
     name      = "dbt-task-service"
@@ -136,23 +141,24 @@ resource "kubernetes_service" "dbt-task-service" {
       app = "dbt-app"
     }
     port {
-      name        = "spark-driver"
-      protocol    = "TCP"
-      port        = local.spark_driver_port
-      target_port = local.spark_driver_port
-      node_port   = local.spark_driver_port
+      name          = "spark-driver"
+      protocol      = "TCP"
+      port          = local.spark_driver_port
+      target_port   = local.spark_driver_port
+      node_port     = local.spark_driver_port
 
     }
     port {
-      name        = "spark-block-mgr"
-      protocol    = "TCP"
-      port        = local.spark_blockmgr_port
-      target_port = local.spark_blockmgr_port
-      node_port   = local.spark_blockmgr_port
+      name          = "spark-block-mgr"
+      protocol      = "TCP"
+      port          = local.spark_blockmgr_port
+      target_port   = local.spark_blockmgr_port
+      node_port     = local.spark_blockmgr_port
     }
 
   }
 }
+*/
 
 resource "google_compute_firewall" "allow-all-internal" {
   name    = "allow-all-internal"
