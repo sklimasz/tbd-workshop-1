@@ -14,15 +14,19 @@ variable "bucket_name" {
   description = "Bucket for storing data pipeline additional code"
 }
 
-variable "data_service_account" {
-  type        = string
-  description = "Service account with READER role to the bucket storing code"
-}
+# variable "data_service_account" {
+#   type = string
+#   # ... (inne definicje)
+#   # required = true  <-- Usuń lub zakomentuj
+#   default = "" # Dodaj tę linię, aby były opcjonalne
+# }
 
-variable "dag_bucket_name" {
-  type        = string
-  description = "Apache Airflow bucket for storing DAGs"
-}
+# variable "dag_bucket_name" {
+#   type = string
+#   # ... (inne definicje)
+#   # required = true  <-- Usuń lub zakomentuj
+#   default = "" # Dodaj tę linię, aby były opcjonalne
+# }
 
 variable "data_bucket_name" {
   type        = string
